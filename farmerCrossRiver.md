@@ -1,155 +1,140 @@
 ```c
+//农夫过河
 #include<stdio.h>
 #include<stdlib.h>
-#include<time.h>
-int m = 7,n = 7;
-int maze[7][7];
-typedef struct Stack{
-	int top;
-	int *x;
-	int *y;
-	int *direction;
-}Stack;
-void createMaze(){//随机构造迷宫
-	srand((int)time(0));
-	int i,j;
-	for(i= 0;i<m;i++){
-		for(j = 0;j<n;j++){
-			maze[i][j] = rand()%5+1;
-			if(maze[i][j] == 1||maze[i][j] == 2||maze[i][j] == 3) maze[i][j] = 0;
-			else maze[i][j] = 1;
-			if(i==0||i==m-1||j==0||j==n-1) maze[i][j] = 1;//给周围围一堵墙
-			if((i == 1&&j==1)||(i==m-2&&j==n-2)) maze[i][j]  = 0;//把迷宫第一个和最后一个设为通路
-		}
-	}
-	printf("输出迷宫：\n");
-	for(i = 0;i<m;i++){//输出迷宫
-		for(j = 0;j<n;j++) printf("%d ",maze[i][j]);
-		putchar(10);
-	}
+typedef int Datatype;
+typedef struct Queue{
+	Datatype location[17];
+	int f;
+	int r;
+}SeqQueue;
+typedef SeqQueue *pSeqQueue;
+
+void initialize(pSeqQueue p){//初始化队列
+	p->f = 0;p->r = 0;
 }
-Stack *Initialize(Stack *s){//初始化栈
-	s->x = (int *)malloc(sizeof(Stack)*m*n);
-	s->y = (int *)malloc(sizeof(Stack)*m*n);
-	s->direction = (int *)malloc(sizeof(Stack)*m*n);
-	if(s->x ==NULL||s->y==NULL||s->direction==NULL){
-		printf("创建栈失败！");
-		return NULL;
-	}
-	s->top = -1;
-	return s;
+int isEmptyQueue(pSeqQueue p){//判断队列是否为空
+	if(p->f==p->r)return 1;
+	return 0;
+}
+int isFullQueue(pSeqQueue p){//判断队列是否为满
+	if(p->r==p->f-1)return 1;
+	return 0;
+}
+void inQueue(pSeqQueue p,int location){//进队列
+	if(isFullQueue(p))return;
+	p->location[p->r] = location;
+	p->r++;
+}
+int outQueue(pSeqQueue p){//出队列
+	if(isEmptyQueue(p))return -1;
+	int loc = p->location[p->f];
+	p->f++;
+	return loc;
 }
 
-void pushstack(int x,int y,Stack *s){//入栈，将坐标入栈
-	s->top++;
-	s->x[s->top] = x;s->y[s->top] = y;
+int farmer(int location){//如果是北岸就返回1，南岸返回0
+	return (0!=(location&0x08));
 }
-void popstack(Stack *s){//出栈
-	s->top--;
+int wolf(int location){//如果是北岸就返回1，南岸返回0；
+	return (0!=(location&0x04));
 }
-void walk(Stack *s){//开始走迷宫
-	int x,y;
-	int count;//来计数探索的周围的边数
-	pushstack(1,1,s);//入口入栈
-	maze[1][1] = 2;
-	while(s->top!=-1){
-		count = 1;
-		if(s->top!=0){//如果当前的点不是迷宫入口
-			s->direction[s->top] = s->direction[s->top-1];
-		}
-		if(s->top==0) s->direction[s->top] = 3;//如果是迷宫入口,则从方向为3开始
-		while(count<=8){
-			x = directionx(s->direction[s->top],s->x[s->top]);//将当前点的当前方向的点的坐标记录下来
-			y = directiony(s->direction[s->top],s->y[s->top]);
-			if(maze[x][y]==0){//如果可走通
-				pushstack(x,y,s);//入栈
-				maze[x][y] = 2;//走过的路赋值2
-				break;
-			}
-			count++;
-			s->direction[s->top]++;
-			if(s->direction[s->top]>7) s->direction[s->top] = 0;
-		}
-		if(s->x[s->top]==m-2&&s->y[s->top]==n-2) return;
-		if(count==9)//如果8个方向都走完了还没有走动就出栈
-			popstack(s);
+int cabbage(int location){
+	return (0!=(location&0x02));
+}
+int goat(int location){
+	return (0!=(location&0x01));
+}
+int safe(int location){//判断安全状态
+	if((goat(location)==cabbage(location))&&(goat(location)!=farmer(location))) return 0;//羊吃白菜
+	if((goat(location)==wolf(location))&&(goat(location)!=farmer(location))) return 0;//狼吃羊
+	return 1;
+}
+void character(int a[16],int i){//用文字形式表示出来
+	if((farmer(a[i])==wolf(a[i]))&&(wolf(a[i])!=wolf(a[i-1]))){//如果当前状态下狼和农夫在同一岸且狼当前位置与前一状态下的位置不同
+		if(farmer(a[i]))printf("农夫带着狼到了北岸\n");//在上述前提下，如果农夫在北岸，则农夫一定带着狼去的
+		else printf("农夫带着狼到了南岸\n");//上一个if语句不满足，则农夫带着狼到了南岸
+	}
+	else if((farmer(a[i])==cabbage(a[i]))&&(cabbage(a[i])!=cabbage(a[i-1]))){
+		if(farmer(a[i]))printf("农夫带着白菜到了北岸\n");
+		else printf("农夫带着白菜到了南岸\n");
+	}
+	else if((farmer(a[i])==goat(a[i]))&&(goat(a[i])!=goat(a[i-1]))){
+		if(farmer(a[i]))printf("农夫带着羊到了北岸\n");
+		else printf("农夫带着羊到了南岸\n");
+	}
+	else {//以上条件都不满足，则农夫单独行动
+		if(farmer(a[i]))printf("农夫独自到达北岸\n");
+		else printf("农夫独自到达南岸\n");
 	}
 }
-int directionx(int n,int x){//传入方向和当前点的横坐标，得到该方向的下一个点的横坐标（方向从0开始顺时针旋转，0为左上角）
-	static int x1;
-	switch(n){
-		case 0:x1 = --x;break;
-		case 1:x1 = --x;break;
-		case 2:x1 = --x;break;
-		case 3:x1 = x;break;
-		case 4:x1 = ++x;break;
-		case 5:x1 = ++x;break;
-		case 6:x1 = ++x;break;
-		case 7:x1 = x;break;
-	}
-	return x1;
-}
-int directiony(int n,int y){//传入方向和当前点的纵坐标，得到该方向的下一个点的纵坐标（方向从0开始顺时针旋转，0为左上角）
-	static int y1;
-	switch(n){
-		case 0:y1 = --y;break;
-		case 1:y1 = y;break;
-		case 2:y1 = ++y;break;
-		case 3:y1 = ++y;break;
-		case 4:y1 = ++y;break;
-		case 5:y1 = y;break;
-		case 6:y1 = --y;break;
-		case 7:y1 = --y;break;
-	}
-	return y1;
-}
-void printRoute(Stack *s){//输出走的路线
+void tenToTwo(int n){//将十进制转化为二进制输出
+	int mo[4];
+	int temp;
 	int i = 0;
-	for(;i<s->top;i++) printf("(%d,%d)->",s->x[i],s->y[i]);
-	if(s->top>=0) printf("(%d,%d)",m-2,n-2);
+	int j;
+	for(;i<4;i++){
+		mo[i] = n%2;
+		n = (n-mo[i])/2;
+		if(n==0) break;
+	}
+	temp = 3-i;
+	if(i!=3){
+		while(temp!=0){
+			printf("0");
+			temp--;
+		}
+	}
+	for(j = i;j>=0;j--){
+		printf("%d",mo[j]);
+	}
+	printf("\t\t");
 }
-void printWalkLine(Stack *s){//结合迷宫将路线输出
+
+void translate(int a[]){//将队列里的内容翻译成人能懂的语言方式
+	printf("二进制形式：\t文字形式：\n");
 	int i,j;
-	int temp,flag = 1;
-	putchar(10);
-	printf("输出在迷宫中走的路线：\n");
-	for(i = 0;i<m;i++){
-		for(j = 0;j<n;j++) {
-			temp = s->top;
-			flag = 1;
-			while(temp>-1){
-				if(temp==-1)break;
-				if(i==s->x[temp]&&j == s->y[temp]){//对于每一个数组的坐标，如果能在栈中找到，就输出“X”
-					flag = 0;
-					printf("X ");
-				}
-				temp--;
+	int seq[16];
+	for(i = 15,j = 15;i>=0;i = a[i],j--){
+		seq[j] = i;
+		if(i==0)break;
+	}
+	for(i = j;i<16;i++){
+		tenToTwo(seq[i]);
+		if(i>j) character(seq,i);
+		else printf("开始时农夫和所有物品都在南岸\n");
+	}
+	return;
+}
+void crossRiver(pSeqQueue p){//农夫过河
+	int i,mover;
+	int location = 0,newlocation = 0;
+	int route[16];
+	inQueue(p,0x00);//初始状态入队
+	for(i = 0;i<16;i++)route[i] = -1;
+	route[0] = 0;
+	while(!isEmptyQueue(p)&&(route[15]==-1)){
+		location = outQueue(p);//取队头作为当前位置
+		for(mover = 1;mover<=8;mover<<=1){
+			if((0!=(location&0x08))==(0!=(location&mover))){//农夫和移动的物体在同一岸边
+			newlocation = location^(0x08|mover);//计算新的状态
+			if(safe(newlocation)&&route[newlocation]==-1){
+				route[newlocation] = location;
+				inQueue(p,newlocation);
 			}
-			if(flag) printf("%d ",maze[i][j]);//否则输出值
-		}
-        putchar(10);
-	}
-}
-void turnTwoToOne(){//将迷宫中的2变为0
-	int i,j;
-	for(i = 0;i<m;i++){
-		for(j = 0;j<n;j++) {
-			if(maze[i][j]==2) maze[i][j]=0;
+			}
 		}
 	}
+	if(route[15] != -1){
+		translate(route);
+	}
+	else printf("问题无解");
 }
 int main(){
-	Stack stack;
-	Stack *s = &stack;
-	createMaze();
-	s = Initialize(s);
-	walk(s);
-	if(s->top==-1)printf("该迷宫没有出路！");
-	turnTwoToOne();
-	printWalkLine(s);
-	printf("输出路径：\n");
-	printRoute(s);
-	printf("\n路径长度为：%d",s->top+1);
-	return 0;
+	SeqQueue queue;
+	pSeqQueue p = &queue;
+	initialize(p);
+	crossRiver(p);
+	return 0 ;
 }
 ```
