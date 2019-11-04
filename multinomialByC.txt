@@ -1,0 +1,202 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<windows.h>
+typedef struct node{
+	int mi;
+	double xishu;
+	struct node *next;
+}node;
+
+node *createlist(int max,node *head,node *p,node *q){//创建链表
+	head = (node *)malloc(sizeof(node));
+	if(head==NULL){
+		printf("申请内存失败！\n");
+		return NULL;
+	}
+	int i = 1;
+	head->next = NULL;p = head,q = head;
+	for(;i<max;i++){
+		q = (node *)malloc(sizeof(node));
+		q->next = NULL;
+		p->next = q;p = q;
+	}
+	return head;
+}
+
+void judge(node *head){
+	if(head==NULL){
+		printf("存储多项式的链表为空！");
+		exit(1);//退出程序
+	} 
+	else printf("链表不为空");
+}
+void sort(node *head,node *p,node *q){//将多项式按照幂指数从大到小排序
+	node *temp;
+	node *prep = head;
+	node *preq;//记录p结点的前一个结点
+	for(p = head->next,preq = p;p->next!=NULL;prep = prep->next,p = p->next){
+		for(q = p->next;q!=NULL;q = q->next){
+			for(preq = p;preq->next!=q;preq = preq->next);
+			if(p->mi<q->mi){
+				if(p->next!=q){
+					temp = p->next;//需要将p结点的后驱做个标记
+					p->next = q->next;//前面三个语句将两个结点互换位置
+					q->next = temp;
+					if(temp!=preq) temp->next = temp->next;
+					prep->next = q;
+					preq->next = p;
+				}
+				else{
+					p->next = q->next;
+					q->next = p;
+					prep->next = q;
+				}
+				temp = p,p = q,q = temp;//必须保证p,q的相对位置
+			}
+		}
+	}
+	for(prep = head;prep->next!=NULL;prep = prep->next){//这个循环的作用是将幂相等的项的系数相加
+		for(preq = prep->next;preq!=NULL;){
+			if(prep->mi==preq->mi){
+				prep->xishu = preq->xishu+prep->xishu;
+				temp = preq;
+				preq = preq->next;prep->next = preq;
+				free(temp);
+			}
+			else{
+				preq = preq->next;
+			}
+		}
+	}
+}
+
+void inputdata(node *head,node *p){//为多项式输入系数和幂指数 
+	printf("请输入多项式每一项的系数和幂指数并用空格隔开：\n");
+	for(p = head->next;p!=NULL;p = p->next){
+		scanf("%lf %d",&p->xishu,&p->mi);
+	}
+}
+
+void print(node *head,node *temp){//显示多项式
+	printf("显示多项式：\n");
+	temp = head->next;
+	while(temp!=NULL){
+		while(temp->xishu==0)
+		{
+			if(temp->next==NULL) return;
+			else temp = temp->next;
+		}
+		printf("%.0lf",temp->xishu);
+		if(temp->mi!=0){//如果当前的项的幂指数不为0就输出x^和幂指数 
+			printf("x^");
+			printf("%d",temp->mi);
+		} 
+		if(temp->next!=NULL) {
+			if(temp->next->xishu==0&&temp->next->next==NULL) break;
+			if(temp->next->xishu<0) printf(" ");
+			else printf(" + ");
+		}
+		temp = temp->next;
+	}
+	putchar(10);
+}
+
+void add(int max1,int max2,node *left,node *right,node *p,node *q){
+	int i = 0,j = 0;
+	int flag = 0;
+	node *t1;//临时使用
+	node *t2;//临时使用
+	node *end;
+	node *temp1,*temp2;
+	for(t2 = right;t2->next!=NULL;t2 = t2->next);
+	end = t2;
+	for(t1 = left->next;t1!=NULL;){
+		flag = 0;
+		for(t2 = right->next;t2!=NULL;t2 = t2->next){
+			if(t2->mi==t1->mi){
+				flag = 1;
+				t2->xishu = t2->xishu+t1->xishu;
+				break;
+			}
+		}
+		temp2 = t1;
+		t1 = t1->next;
+		if(flag == 0){//如果未在第一个多项式里找到相等系数的项，就将该项插入第二个多项式里
+			for(temp1 = left;temp1!=NULL;temp1 = temp1->next){
+				if(temp1->next==temp2){
+					temp1->next = temp2->next;
+					end->next = temp2;temp2->next = NULL;end = end->next;
+				}
+			}
+		}
+	}
+}
+void reduce(int max1,int max2,node *left,node *right,node *p,node *q){
+	int i = 0,j = 0;
+	int flag = 0;
+	node *t1;//临时使用
+	node *t2;//临时使用
+	node *end;
+	node *temp1,*temp2;
+	for(t2 = right;t2->next!=NULL;t2 = t2->next);
+	end = t2;
+	for(t1 = left->next;t1!=NULL;){
+		flag = 0;
+		for(t2 = right->next;t2!=NULL;t2 = t2->next){
+			if(t2->mi==t1->mi){
+				flag = 1;
+				t2->xishu = t2->xishu-t1->xishu;
+				break;
+			}
+		}
+		temp2 = t1;
+		t1 = t1->next;
+		if(flag == 0){//如果未在第一个多项式里找到相等幂的项，就将该项插入第二个多项式里
+			for(temp1 = left;temp1!=NULL;temp1 = temp1->next){
+				if(temp1->next==temp2){
+					temp1->next = temp2->next;
+					end->next = temp2;temp2->next = NULL;end = end->next;
+					temp2->xishu = -temp2->xishu;
+				}
+			}
+		}
+	}
+}
+int main(){
+	node *left,*right;
+	node *p,*q;
+	int max1,max2;
+	int choice;
+	printf("请输入链表1的最大长度");
+	scanf("%d",&max1); 
+	printf("请输入链表2的最大长度");
+	scanf("%d",&max2);
+	while(max1<0||max2<0){
+		printf("链表长度不可以小于0！请重新输入：");
+		if(max1<0) scanf("%d",&max1);
+		if(max2<0) scanf("%d",&max2);
+	}
+	left = createlist(max1+1,left,p,q);
+	right = createlist(max2+1,right,p,q);
+	inputdata(left,p);
+	inputdata(right,p);
+	print(left,p);
+	print(right,p);
+	printf("请问你要实现多项式相加还是多项式相减？（输入1，则相加；输入其他整数，则相减）\n");
+	scanf("%d",&choice);
+	if(choice==1){
+		//多项式相加
+		add(max1,max2,left,right,p,q);
+		sort(right,p,q);
+		printf("相加之后的多项式为：\n");
+		print(right,p);
+	}
+	else{
+		//多项式相减
+		reduce(max1,max2,left,right,p,q);
+		sort(right,p,q);
+		printf("第二个多项式减去第一个多项式之后的结果为：\n");
+		print(right,p);
+	}
+	return 0;
+}
