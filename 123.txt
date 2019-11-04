@@ -1,1 +1,63 @@
-hfwoeijfeiwjvnolewj
+#include<stdio.h>
+#include<stdlib.h>
+struct student
+{
+    int order;
+    int temple_order;
+    struct student *next;
+}*head,*p,*end;
+void Process(int temple_num,int max);
+int main()
+{
+    int num,temple_num,max,i=0;
+    int final_order;
+    printf("请输入学生总人数：\n");
+    scanf("%d",&num);
+    temple_num = num;
+    printf("请输入报数的最大值：\n");
+    scanf("%d",&max);
+	for(;i<num;i++)
+	{
+		end = (struct student *)malloc(sizeof(struct student));
+		if(i==0)
+			head = end;
+		else
+			p->next=end;
+		p = end;end->next = NULL;
+		end->order = i+1;end->temple_order=1+i;
+	}
+	end->next=head;
+	printf("依次退出的同学如下：\n");
+	Process(temple_num,max);
+	putchar(10);
+}
+void Process(int temple_num,int max)
+{
+	int temp=1;//temp是每个学生报的数字，从1开始 
+	int flag=0,flag_1=1,flag_t=0;
+	for(p = head;temple_num!=0;p = p->next,temp++)
+	{
+		while(p->temple_order == 0)//判断当前同学是否已经退出 
+			p = p->next;
+		if(temp == max) //判断是否数到了最大值 
+		{
+			temp = 0;
+			p->temple_order = temp;
+			printf("%d ",p->order);
+			temple_num--;//退出一个同学就减一 
+		}
+		p->temple_order=temp;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
